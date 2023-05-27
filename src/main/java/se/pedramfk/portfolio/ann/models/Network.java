@@ -77,8 +77,6 @@ public class Network {
                 
             }
 
-            //yMSE = yMSE.divide(x.length);
-
             System.out.println(String.format("epoch = %d\terror = %f", currentEpoch, yMSE.get(0, 0)));
 
         }
@@ -104,12 +102,7 @@ public class Network {
 
         Network network = new Network() {{
             addLayer(new DenseLayer(2, 3, Activation.TANH, Activation.DELTA_TANH));
-            //addLayer(new DenseLayer(3, 1, Activation.TANH, Activation.DELTA_TANH));
             addLayer(new DenseLayer(3, 1, Activation.SIGMOID, Activation.DELTA_SIGMOID));
-            //addLayer(new FullyConnectedLayer(2, 3));
-            //addLayer(new SigmoidLayer());
-            //addLayer(new FullyConnectedLayer(3, 1));
-            //addLayer(new SigmoidLayer());
         }};
 
         network.predict(x).print("Prediction");
@@ -121,49 +114,3 @@ public class Network {
     }
 
 }
-/*
-x_train = np.array([[[0,0]], [[0,1]], [[1,0]], [[1,1]]])
-y_train = np.array([[[0]], [[1]], [[1]], [[0]]])
-
-# network
-net = Network()
-net.add(FCLayer(2, 3))
-net.add(ActivationLayer(tanh, tanh_prime))
-net.add(FCLayer(3, 1))
-net.add(ActivationLayer(tanh, tanh_prime))
-
-# train
-net.use(mse, mse_prime)
-net.fit(x_train, y_train, epochs=1000, learning_rate=0.1)
-
-# test
-out = net.predict(x_train)
-print(out)
-
-
-
-    def fit(self, x_train, y_train, epochs, learning_rate):
-        # sample dimension first
-        samples = len(x_train)
-
-        # training loop
-        for i in range(epochs):
-            err = 0
-            for j in range(samples):
-                # forward propagation
-                output = x_train[j]
-                for layer in self.layers:
-                    output = layer.forward_propagation(output)
-
-                # compute loss (for display purpose only)
-                err += self.loss(y_train[j], output)
-
-                # backward propagation
-                error = self.loss_prime(y_train[j], output)
-                for layer in reversed(self.layers):
-                    error = layer.backward_propagation(error, learning_rate)
-
-            # calculate average error on all samples
-            err /= samples
-            print('epoch %d/%d   error=%f' % (i+1, epochs, err))
- */
