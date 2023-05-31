@@ -13,40 +13,54 @@ public class Network {
 
     private final List<Layer> layers = new ArrayList<>();
 
+    /**
+     * Add a layer to this network.
+     * @param layer     a layer implementation
+     */
     public final void addLayer(Layer layer) {
         this.layers.add(layer);
     }
 
+    /**
+     * Forward propagate over all {@link #layers}.
+     * @param x     input data to be forwarded through all layers
+     * @return      output data from last layer
+     * @see         #addLayer(Layer)
+     */
     private final Matrix getForwardProp(Matrix x) {
+
         for (Layer layer: layers) {
             x = new Matrix(layer.forwardPropagate(x));
         }
+
         return x;
+
     }
 
+    /**
+     * Backward propagate over all {@link #layers}.
+     * @param loss              loss to be propagated through all layers in reverse order
+     * @param learningRate      learning-rate used to tune layer parameters
+     * @return                  final propagated loss gradients from first layer
+     */
     private final Matrix getBackwardProp(Matrix loss, double learningRate) {
+
         for (int i = layers.size() - 1; i >= 0 ; i--) {
-            Layer currentLayer = layers.get(i);
-            loss = currentLayer.backwardPropagate(loss, learningRate);
+            loss = layers.get(i).backwardPropagate(loss, learningRate);
         }
+
         return loss;
+
     }
 
-    public final Matrix predict(Matrix x, Matrix y) {
-        
-        Matrix predictions = new Matrix(x.rows, y.cols);
-
-        for (int i = 0; i < x.rows; i++) {
-
-            Matrix xi = new Matrix(new double[][] { x.get(i) });
-            Matrix yiPred = getForwardProp(xi);
-
-            predictions.set(i, yiPred.get(0));
-
-        }
-
-        return predictions;
-
+    /**
+     * Predict values from given inputs.
+     * @param x     input data to be predicted
+     * @return      predicted values
+     * @see         #getForwardProp(Matrix)
+     */
+    public final Matrix predict(Matrix x) {
+        return getForwardProp(x);
     }
 
     public static final double getAccuracy(Matrix yTrue, Matrix yPred) {
@@ -115,7 +129,7 @@ public class Network {
 
     }
 
-    public final void fitEpoch(Matrix x, Matrix y, int epochs, int batchSize, boolean shuffle, double learningRate) {
+    private final void fitEpoch(Matrix x, Matrix y, int epochs, int batchSize, boolean shuffle, double learningRate) {
 
         for (int currentEpoch = 0; currentEpoch < epochs; currentEpoch++) {
 
@@ -127,10 +141,15 @@ public class Network {
 
     }
 
-    public final void fitEpoch(Matrix x, Matrix y, int epochs, int batchSize, double learningRate) {
-        fitEpoch(x, y, epochs, batchSize, false, learningRate);
+    public final void fit(Matrix x, Matrix y, int epochs, int batchSize, boolean shuffle, double learningRate) {
+        fitEpoch(x, y, epochs, batchSize, shuffle, learningRate);
     }
 
+    public final void fit(Matrix x, Matrix y, int epochs, int batchSize, double learningRate) {
+        fit(x, y, epochs, batchSize, false, learningRate);
+    }
+
+    /*
     public final void fit(Matrix x, Matrix y, int epochs, int batchSize, double learningRate) {
 
         for (int currentEpoch = 0; currentEpoch < epochs; currentEpoch++) {
@@ -172,7 +191,7 @@ public class Network {
         }
 
 
-    }
+    } */
 
     public final void fit(Matrix x, Matrix y, int epochs, double learningRate) {
 
@@ -243,10 +262,10 @@ public class Network {
 
         //network.predict(x).print("Prediction");
 
-        //network.fit(x, y, 1000, 1e-1);
-        network.fitEpoch(x, y, 1000, 2, 1e-1);
+        network.fit(x, y, 200000, 1e-4);
+        //network.fitEpoch(x, y, 20000, 1, 1e-1);
 
-        network.predict(x, y).print("Prediction");
+        network.predict(x).print("Prediction");
 
     }
     

@@ -93,17 +93,12 @@ public class TestNetwork {
         final String testPath = "/Users/pedramfk/workspace/git/portfolio/neural-network/src/test/resources/pima-indians-diabetes/test.csv";
 
         final TrainAndTestData trainAndTestData = loadData(trainPath, testPath);
-
-        final double[][] xTrainArray = trainAndTestData.getTrainData().getNormalizedX();
-        final double[][] yTrainArray = trainAndTestData.getTrainData().getY();
-
-        final double[][] xTestArray = trainAndTestData.getTestData().getNormalizedX();
-        final double[][] yTestArray = trainAndTestData.getTestData().getY();
-
-        Matrix xTrain = new Matrix(xTrainArray);
-        Matrix xTest = new Matrix(xTestArray);
-        Matrix yTrain = new Matrix(yTrainArray);
-        Matrix yTest = new Matrix(yTestArray);
+        
+        final Matrix xTrain = new Matrix(trainAndTestData.getTrainData().getNormalizedX());
+        final Matrix yTrain = new Matrix(trainAndTestData.getTrainData().getY());
+        
+        final Matrix xTest = new Matrix(trainAndTestData.getTestData().getNormalizedX());
+        final Matrix yTest = new Matrix(trainAndTestData.getTestData().getY());
 
         final Network network = new Network() {{
             addLayer(new DenseLayer(8, 4, new TanhActivation()));
@@ -112,9 +107,9 @@ public class TestNetwork {
         }};
 
         //network.fit(xTrain, yTrain, 2000, 1e-2);
-        network.fitEpoch(xTrain, yTrain, 8000, 8, 1e-4);
+        network.fit(xTrain, yTrain, 2000, 8, false, 1e-3);
 
-        Matrix yPred = network.predict(xTest, yTest);
+        Matrix yPred = network.predict(xTest);
 
         BinaryClassificationResults res = new BinaryClassificationResults(yTest, yPred);
         
