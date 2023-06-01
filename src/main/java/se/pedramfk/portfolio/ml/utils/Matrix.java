@@ -7,7 +7,10 @@ import static se.pedramfk.portfolio.ml.utils.MatrixFunctions.*;
 public final class Matrix {
 
     private double[][] arrayData;
+
     public final int rows, cols;
+
+    public String label = "Matrix";
 
     public Matrix(double[][] arrayData) {
         this.arrayData = copyArray(arrayData);
@@ -401,25 +404,17 @@ public final class Matrix {
         return arrayDataCopy;
     }
 
-    public void print() {
-
-        System.out.println(String.format("[%d x %d]", rows, cols));
-
-        for (int i = 0; i < this.rows; i++) {
-            for (int j = 0; j < this.cols; j++) {
-                
-                System.out.print(this.arrayData[i][j] + "\t");
-            }            
-            System.out.println();
-        }
-        
-        System.out.println();
-
+    @Override
+    public String toString() {
+        return Ascii.MatrixAscii.getString(this, this.label == null ? "Matrix" : this.label);
     }
 
     public void print(String header) {
-        System.out.println("\nMatrix: " + header);
-        print();
+        System.out.println(toString());
+    }
+
+    public void print() {
+        print(this.label == null ? "Matrix" : this.label);
     }
     
     public static final void main(String[] args) {
@@ -427,8 +422,11 @@ public final class Matrix {
         Matrix a = Matrix.fromArray(new double[][] {{3, 2}, {1, 2}});
         Matrix b = Matrix.fromArray(new double[][] {{2, 1}, {1, 1}});
 
-        a.print("A");
-        b.print("B");
+        a.label = "A";
+        b.label = "B";
+
+        a.print();
+        b.print();
 
         divide(a, b).print("A / B");
 
