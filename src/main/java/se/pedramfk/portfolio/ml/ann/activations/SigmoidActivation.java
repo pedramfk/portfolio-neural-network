@@ -10,13 +10,14 @@ public final class SigmoidActivation implements Activation {
     private static final ApplyValueFunction sigmoidGrad = (v) -> sigmoid.apply(v) * (1. - sigmoid.apply(v));
 
     @Override
-    public Matrix getActivation(Matrix input) {
-        return input.copy().apply(sigmoid);
+    public Matrix getActivation(Matrix z) {
+        return z.copy().apply(sigmoid);
     }
 
     @Override
-    public Matrix getActivationGradient(Matrix output) {
-        return output.copy().apply(sigmoidGrad);
+    public Matrix getActivationGradient(Matrix z) {
+        //return Matrix.subtract(z, Matrix.multiply(z, z));
+        return z.copy().apply(sigmoidGrad);
     }
     
 }

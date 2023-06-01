@@ -326,6 +326,22 @@ public final class Matrix {
 
     }
 
+    public static final Matrix replace(Matrix source, double value, int[][] indices) {
+        
+        Matrix res = new Matrix(source);
+
+        for (int i = 0; i < indices.length; i++) {
+            res.arrayData[indices[i][0]][indices[i][1]] = value;
+        }
+        
+        return res;
+
+    }
+
+    public static final Matrix replace(Matrix source, double value, int n) {
+        return replace(source, value, MatrixData.getRandomMatrixIndices(source, n));
+    }
+
     public static final Matrix replace(Matrix source, Matrix target, int axis, Integer[] indices) {
 
         assert((source.rows == target.rows) || (source.cols == target.cols));
@@ -455,7 +471,7 @@ public final class Matrix {
         b.print("B = B.sum(1)");
         repeat(b, 1, 2).print(null);;
 
-        Matrix e = Matrix.fromArray(new double[][] {{2, 1, 4}, {1, 1, 23}, {0, 0, 0}, {-1, -2, 3}, {4, 8, 9}});
+        Matrix e = Matrix.fromArray(new double[][] {{2, 1, 4}, {1, 1, 23}, {-1, 2, 9}, {-1, -2, 3}, {4, 8, 9}});
         Matrix f = Matrix.fromArray(new double[][] {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}});
         e.print("E");
         shuffle(e, 0, 3).print("shuffle(E, 0, 3)");
@@ -469,6 +485,17 @@ public final class Matrix {
         e.print("E");
         slice(e, 0, 4, 5).print("slice(E, 0, 4, 5)");
         slice(e, 1, 0, 3).print("slice(E, 1, 0, 3)");
+
+        e.print("E");
+        int[][] randomIndices = MatrixData.getRandomMatrixIndices(e, 4);
+        for (int i = 0; i < randomIndices.length; i++) {
+            for (int j = 0; j < randomIndices[0].length; j++) {
+                System.out.print(randomIndices[i][j] + "   ");
+            }
+            System.out.println();
+        }
+        replace(e, 0, randomIndices).print("replace(E, 0, randomIndices)");
+        replace(e, 42, 4).print("replace(E, 42, 4)");
 
     }
 

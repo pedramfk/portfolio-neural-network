@@ -6,6 +6,7 @@ import se.pedramfk.portfolio.ml.ann.layers.DenseLayer;
 import se.pedramfk.portfolio.ml.utils.MatrixData;
 import se.pedramfk.portfolio.ml.ann.activations.*;
 import se.pedramfk.portfolio.ml.ann.layers.Layer;
+import se.pedramfk.portfolio.ml.ann.losses.CrossEntropyLoss;
 import se.pedramfk.portfolio.ml.utils.Matrix;
 
 
@@ -60,21 +61,20 @@ public class Network {
      * @see         #getForwardProp(Matrix)
      */
     public final Matrix predict(Matrix x) {
-        return getForwardProp(x);
+        return Matrix.transpose(getForwardProp(Matrix.transpose(x)));
     }
 
-    public static final double getAccuracy(Matrix yTrue, Matrix yPred) {
+    public static final double getLearningRate(int epoch) {
 
-        int n = yTrue.rows;
-        double correct = 0;
+        final double etaStep = 10;
+        final double etaMin = 1e-5;
+        final double etaMax = 4e-1;
 
-        for (int i = 0; i < n; i++) {
-            double pred = yPred.get(i, 0) > .5 ? 1.0 : 0.0;
-            double actual = yTrue.get(i, 0) > .5 ? 1.0 : 0.0;
-            if (pred == actual) correct++;
-        }
+        double cycle = Math.floor(1.0 + (float) epoch / (2.0 + etaStep));
 
-        return correct / n;
+        double e = Math.abs((float) epoch / etaStep - 2.0 * cycle + 1.0);
+
+        return etaMin + (etaMax - etaMin) * Math.max(0, 1.0 - e);
 
     }
 
@@ -92,6 +92,8 @@ public class Network {
 
     private final double fitBatch(Matrix x, Matrix y, int epochs, int batchSize, boolean shuffle, double learningRate) {
 
+        CrossEntropyLoss crossEntropyLoss = new CrossEntropyLoss();
+        
         double squaredErrorLoss = 0.0;
 
         for (int i = 0; i < Math.floorDiv(x.rows, batchSize); i++) {
@@ -102,30 +104,29 @@ public class Network {
 
                 Integer[] indices = MatrixData.getRandomIndices(batchSize);
 
-                xi = Matrix.getIndices(x, 0, indices);
-                yi = Matrix.getIndices(y, 0, indices);
+                xi = Matrix.transpose(Matrix.getIndices(x, 0, indices));
+                yi = Matrix.transpose(Matrix.getIndices(y, 0, indices));
 
             } else {
 
-                xi = Matrix.slice(x, 0, i * batchSize, (i + 1) * batchSize);
-                yi = Matrix.slice(y, 0, i * batchSize, (i + 1) * batchSize);
+                xi = Matrix.transpose(Matrix.slice(x, 0, i * batchSize, (i + 1) * batchSize));
+                yi = Matrix.transpose(Matrix.slice(y, 0, i * batchSize, (i + 1) * batchSize));
 
             }
-
             
             Matrix yiPred = getForwardProp(xi);
 
-            Matrix error = Matrix.subtract(yi, yiPred);
+            Matrix yiLoss = Matrix.subtract(yiPred, yi);
 
-            squaredErrorLoss += Matrix.sum(Matrix.multiply(error, Matrix.transpose(error)));
+            Matrix lossGrad = crossEntropyLoss.getCostGradient(yiPred, yi);
+
+            squaredErrorLoss += Matrix.sum(Matrix.dot(yiLoss, yiLoss));
             
-            Matrix yiLoss = error.multiply(-2);
-
-            getBackwardProp(yiLoss, learningRate);
+            getBackwardProp(lossGrad, learningRate);
             
         }
 
-        return squaredErrorLoss;
+        return squaredErrorLoss / batchSize;
 
     }
 
@@ -149,51 +150,12 @@ public class Network {
         fit(x, y, epochs, batchSize, false, learningRate);
     }
 
-    /*
-    public final void fit(Matrix x, Matrix y, int epochs, int batchSize, double learningRate) {
-
-        for (int currentEpoch = 0; currentEpoch < epochs; currentEpoch++) {
-
-            Matrix yPred = new Matrix(y.rows, y.cols);
-            
-            for (int i = 0; i < x.rows; i++) {
-
-                Matrix xi = new Matrix(new double[][] { x.get(i) });
-                Matrix yi = new Matrix(new double[][] { y.get(i) });
-                
-                Matrix yiPred = getForwardProp(xi);
-                
-                Matrix yiLoss = Matrix.subtract(yi, yiPred).multiply(-2);
-                //MatrixData.subtract(yTrue, yPred).multiply(-2)
-                yPred.set(i, yiPred.get(0));
-
-                getBackwardProp(yiLoss, learningRate);
-                                
-                //MatrixData yPred = getForwardProp(new MatrixData(x[i]).transpose());
-                //MatrixData yTarget = new MatrixData(y[i]).transpose();
-
-                //double mse = LossFunctions.getMSE(yTarget, yPred);
-                //yMSE.set(i, 0, mse);
-                
-                //yPred[i] = output.get(0);
-                //mse += LossFunctions.getMSE(y[i], yPred.get(i));
-                
-                // Backward Propagate
-                
-                //getBackwardProp(LossFunctions.getDeltaMSE(yActual, yPred), lr);
-                
-            }
-
-            double mse = getMse(y, yPred);
-            //System.out.println(String.format("epoch = %d\terror = %f", currentEpoch, yMSE.get(0)[x.rows - 1]));
-            System.out.println(String.format("epoch = %d\terror = %f", currentEpoch, mse));
-
-        }
-
-
-    } */
 
     public final void fit(Matrix x, Matrix y, int epochs, double learningRate) {
+
+        CrossEntropyLoss crossEntropyLoss = new CrossEntropyLoss();
+
+        double eta = learningRate;
 
         for (int currentEpoch = 0; currentEpoch < epochs; currentEpoch++) {
 
@@ -202,35 +164,24 @@ public class Network {
             
             for (int i = 0; i < x.rows; i++) {
 
-                Matrix xi = new Matrix(new double[][] { x.get(i) });
-                Matrix yi = new Matrix(new double[][] { y.get(i) });
+                Matrix xi = Matrix.transpose(new Matrix(new double[][] { x.get(i) }));
+                Matrix yi = Matrix.transpose(new Matrix(new double[][] { y.get(i) }));
                 
                 Matrix yiPred = getForwardProp(xi);
+
+                Matrix lossGrad = crossEntropyLoss.getCostGradient(yiPred, yi);
                 
-                Matrix yiLoss = Matrix.subtract(yi, yiPred).multiply(-2);
-                //MatrixData.subtract(yTrue, yPred).multiply(-2)
                 yPred.set(i, yiPred.get(0));
 
-                getBackwardProp(yiLoss, learningRate);
-                                
-                //MatrixData yPred = getForwardProp(new MatrixData(x[i]).transpose());
-                //MatrixData yTarget = new MatrixData(y[i]).transpose();
+                //eta = getLearningRate(currentEpoch * i);
 
-                //double mse = LossFunctions.getMSE(yTarget, yPred);
-                //yMSE.set(i, 0, mse);
-                
-                //yPred[i] = output.get(0);
-                //mse += LossFunctions.getMSE(y[i], yPred.get(i));
-                
-                // Backward Propagate
-                
-                //getBackwardProp(LossFunctions.getDeltaMSE(yActual, yPred), lr);
+                getBackwardProp(lossGrad, eta);
                 
             }
 
             double mse = getMse(y, yPred);
             //System.out.println(String.format("epoch = %d\terror = %f", currentEpoch, yMSE.get(0)[x.rows - 1]));
-            System.out.println(String.format("epoch = %d\terror = %f", currentEpoch, mse));
+            System.out.println(String.format("epoch = %d\terror = %f\teta = %f", currentEpoch, mse, eta));
 
         }
 

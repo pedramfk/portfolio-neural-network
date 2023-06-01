@@ -48,6 +48,35 @@ public final class MatrixData {
         
     }
 
+    public static final int[][] getRandomMatrixIndices(Matrix matrix, int n) {
+        
+        java.util.List<Integer> rowIndices = new java.util.ArrayList<>();
+        java.util.List<Integer> colIndices = new java.util.ArrayList<>();
+
+        int[][] indices = new int[n][2];
+
+        for (int i = 0; i < n; i++) {
+
+            int v1 = (int) Math.floor(Math.random() * matrix.rows);
+            int v2 = (int) Math.floor(Math.random() * matrix.cols);
+
+            while (rowIndices.contains(v1) && colIndices.contains(v2) ) {
+                v1 = (int) Math.floor(Math.random() * matrix.rows);
+                v2 = (int) Math.floor(Math.random() * matrix.cols);
+            }
+
+            rowIndices.add(v1);
+            colIndices.add(v2);
+
+            indices[i][0] = v1;
+            indices[i][1] = v2;
+
+        }
+        
+        return indices;
+        
+    }
+
     public static final Integer[] getRandomIndices(int n) {
         
         java.util.List<Integer> setIndices = new java.util.ArrayList<>();
@@ -59,6 +88,7 @@ public final class MatrixData {
         }
         
         return setIndices.toArray(new Integer[n]);
+
     }
     
     public static final TrainAndTestData loadTrainAndTestData(String path, String sep, double trainSplitSize) throws Exception {

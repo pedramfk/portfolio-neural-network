@@ -25,7 +25,7 @@ Network network = new Network() {{
 
 final int epochs = 2000;
 final int batchSize = 8;
-final boolean shuffle = false;
+final boolean shuffle = true;
 final double learningRate = 1e-3;
 
 Results results = network.fit(
@@ -41,23 +41,87 @@ Matrix yPred = network.predict(xTest);
 BinaryClassificationResults res = new BinaryClassificationResults(yTest, yPred);
         
 res.getConfusionMatrix().print();
-
-''' Confusion Matrix
-
-           Predicted     Predicted
-           True          False
-        ┌─────────────┬─────────────┐
-Actual  │    78.2 %   │    21.8 %   │
-True    │     (43)    │     (12)    │
-        ├─────────────┼─────────────┤
-Actual  │    47.6 %   │    61.0 %   │
-False   │     (39)    │     (61)    │
-        └─────────────┴─────────────┘
-
-· Accuracy: 67.1 %
-· Precision: 52.4 %
-· Recall: 78.2 %
-· F1: 62.8 %
-'''
-
 ```
+
+```text
+~~~~~~~~~~~~ Confusion Matrix ~~~~~~~~~~~~
+
+            Predicted     Predicted
+            True          False
+         ┌─────────────┬─────────────┐
+ Actual  │    65.5 %   │    34.5 %   │
+ True    │     (36)    │     (19)    │
+         ├─────────────┼─────────────┤
+ Actual  │    30.8 %   │    84.0 %   │
+ False   │     (16)    │     (84)    │
+         └─────────────┴─────────────┘
+
+ · Accuracy: 77.4 %
+ · Precision: 69.2 %
+ · Recall: 65.5 %
+ · F1: 67.3 %
+
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
+
+---
+
+## Modeling
+
+### Dimensions
+
+- *Input data $X$ of dimension $(d_0 \times n_b)$.*
+- *Target data $Y$ of dimension $(d_K \times n_b)$.*
+- *Layer weight $W_k$ of dimension $(d_k \times d_{k-1})$.*
+- *Layer bias $b_k$ of dimension $(d_k \times n_b)$.*
+
+### Forward Propagation
+
+- *Layer indices $k = 1, 2, \dots, K$.*
+- *Layer input $X_k = A_{k-1}$.*
+- *Linear layer output $Z_k = W_k X_k + b_k$.*
+- *Non-linear layer output $A_k = f\left(Z_k\right)$.*
+  - *E.g. sigmoid activation: $f(z) = \frac{1}{1 + e^{-z}}$*
+- *Predictions $\hat{Y} = A_K$.*
+
+### Cross-Entropy Loss
+
+- *$n_b = 1 \rightarrow L_{\mathcal{c}} = - \ln (Y \cdot A_K).$*
+- *$n_b > 1 \rightarrow L_{\mathcal{c}} =- \ln \frac{1}{n_b} \sum Y^TA_{K}$.*
+
+### Quadratic Loss
+
+- *$n_b = 1 \rightarrow L_{\mathcal{q}} = \frac{1}{2} (Y - A_K)(Y - A_K)^T$*
+- *$n_b > 1 \rightarrow L_{\mathcal{q}} = \frac{1}{2n_b} (Y - A_K)(Y - A_K)^T$*
+- $\nabla_A L_q(\cdot) = - (Y - A_K)$
+
+### Backward Propagation
+
+- *Output gradient loss $\nabla_A L_q (\cdot) \vert_{k=K} = - (Y - A_K)$.*
+- *Layer gradient loss $\delta_k = W_{k+1}^T \delta_{k+1} \cdot \nabla_Z f (\cdot) \vert_{k=k}$.*
+  - $\rightarrow \nabla_W L (\cdot) \vert_{k=k} = A_{k-1} \delta_k = X_k\delta_k$
+  - $\rightarrow \nabla_b L (\cdot) \vert_{k=k} = \delta_k$
+  - $\rightarrow W_k^{(i+1)} = W_k^{(i)} - \eta X_k\delta_k$
+  - $\rightarrow b_k^{(i+1)} = b_k^{(i)} - \eta X_k\delta_k$
+
+---
+
+## TODO
+
+[x] Cross-Entropy loss
+
+[ ] Regularization
+
+[ ] Batch Normalization
+
+[ ] Weight & Bias Initialization methods
+
+[ ] Dropout Layer
+
+[ ] Adaptive Learning Rate
+
+[ ] Wrapper for Train Results
+
+[ ] Unit Tests
+
+[ ] Plots
