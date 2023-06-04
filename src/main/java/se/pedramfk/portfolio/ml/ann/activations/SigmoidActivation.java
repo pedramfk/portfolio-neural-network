@@ -16,7 +16,6 @@ public final class SigmoidActivation implements Activation {
 
     @Override
     public Matrix getActivationGradient(Matrix z) {
-        //return Matrix.subtract(z, Matrix.multiply(z, z));
         return z.copy().apply(sigmoidGrad);
     }
     

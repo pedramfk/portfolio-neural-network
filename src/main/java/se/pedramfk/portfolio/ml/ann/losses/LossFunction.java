@@ -4,8 +4,8 @@ import se.pedramfk.portfolio.ml.utils.Matrix;
 
 public interface LossFunction {
 
-    public Matrix getCost(Matrix a, Matrix y);
+    public Matrix getLoss(Matrix a, Matrix y);
 
-    public Matrix getCostGradient(Matrix a, Matrix y);
+    public Matrix getLossGradient(Matrix a, Matrix y);
     
 }

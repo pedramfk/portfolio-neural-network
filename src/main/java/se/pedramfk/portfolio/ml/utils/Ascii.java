@@ -10,7 +10,7 @@ public class Ascii {
 
     public static class MatrixAscii {
 
-        public static final int DEFAULT_CELL_WIDTH = 7;
+        public static final int DEFAULT_CELL_WIDTH = 11;
         public static final int DEFAULT_DECIMALS = 1;
         public static final double DEFAULT_EXP_FORMAT_THRESHOLD = 10000.0;
 
@@ -31,14 +31,13 @@ public class Ascii {
         public static final char HORIZONTAL_LINE = '─';
         public static final char VERTICAL_LINE = '│';
 
-        public static String getString(Matrix matrix, String label) {
+        public static String getString(Matrix matrix, String label, int r) {
 
             StringBuilder sb = new StringBuilder();
 
             final int boxWidth = matrix.cols * DEFAULT_CELL_WIDTH + (matrix.cols + 2);
 
             // Header
-            //final String header = String.format("%s", matrix.label == null ? "" : matrix.label);
             final int headerLeftPad = label.length() < boxWidth ? Math.round((boxWidth - label.length()) / 2) : 0;
 
             sb.append(DEFAULT_NEW_LINE);
@@ -65,7 +64,7 @@ public class Ascii {
                 for (int col = 0; col < matrix.cols; col++) {
 
                     final boolean expFormat = matrix.get(row, col) >= DEFAULT_EXP_FORMAT_THRESHOLD ? true : false;
-                    final String formatString = String.format("%s.%d%s", "%", DEFAULT_DECIMALS, expFormat ? "e" : "f");
+                    final String formatString = String.format("%s.%d%s", "%", r, expFormat ? "e" : "f");
                     final String cell = String.format(formatString, matrix.get(row, col));
 
                     final int cellLeftPad = Math.round((DEFAULT_CELL_WIDTH - cell.length()) / 2);
@@ -111,8 +110,16 @@ public class Ascii {
 
         }
 
+        public static String getString(Matrix matrix, int r) {
+            return getString(matrix, matrix.label == null ? "" : matrix.label, r);
+        }
+
+        public static String getString(Matrix matrix, String label) {
+            return getString(matrix, label, DEFAULT_DECIMALS);
+        }
+
         public static String getString(Matrix matrix) {
-            return getString(matrix, matrix.label == null ? "" : matrix.label);
+            return getString(matrix, DEFAULT_DECIMALS);
         }
 
     }

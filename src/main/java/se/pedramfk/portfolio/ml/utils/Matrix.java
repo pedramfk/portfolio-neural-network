@@ -188,6 +188,26 @@ public final class Matrix {
         return new Matrix(matrix).iterator(function);
     }
 
+    /**
+     * <p>
+     * Applies output from provided function to 
+     * each matrix entry and provided value.
+     * </p>
+     * 
+     * <p>
+     * <b>Note:</b> Assumes that function takes provided value as input.
+     * </p>
+     * 
+     * @param matrix        target matrix
+     * @param value         value to be provided when calling {@param function}
+     * @param function      function to be applied on {@param matrix} with provided {@param value}
+     * @return              mutated instance of Matrix object
+     * @see                 #apply(Matrix, ApplyValueFunction)
+     */
+    public static final Matrix apply(Matrix matrix, double value, ApplyValuesFunction function) {
+        return new Matrix(matrix).iterator(function, value);
+    }
+
     public static final Matrix multiply(Matrix a, Matrix b) {
         Matrix res = new Matrix(a.rows, b.cols);
         for (int row = 0; row < res.rows; row++) {  
@@ -224,6 +244,14 @@ public final class Matrix {
 
     }
 
+    /**
+     * Calculate sum of matrix over specified axis.
+     * 
+     * @param matrix    target matrix
+     * @param axis      target axis
+     * @return          sum of {@param matrix} over provided {@param axis}
+     * @see             #sum(Matrix)
+     */
     public static final Matrix sum(Matrix matrix, int axis) {
         
         assert((axis == 0) || (axis == 1));
@@ -245,6 +273,13 @@ public final class Matrix {
 
     }
 
+    /**
+     * Calculate sum of matrix.
+     * 
+     * @param matrix    target matrix
+     * @return          sum of {@param matrix}
+     * @see             #sum(Matrix, Integer)
+     */
     public static final double sum(Matrix matrix) {
         double sum = 0.0;
         for (int i = 0; i < matrix.rows; i++) {  
@@ -390,6 +425,20 @@ public final class Matrix {
 
     }
 
+    public static final Matrix diag(double value, int n) {
+
+        Matrix res = new Matrix(n, n);
+        
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                res.arrayData[i][j] = i == j ? value : 0;
+            }
+        }
+
+        return res;
+
+    }
+
     public static final Matrix fromArray(double[][] arrayData) {
         return new Matrix(arrayData);
     }
@@ -409,13 +458,35 @@ public final class Matrix {
         return Ascii.MatrixAscii.getString(this, this.label == null ? "Matrix" : this.label);
     }
 
+    public String toString(String header, int r) {
+        return Ascii.MatrixAscii.getString(this, header, r);
+    }
+
+    public String toString(int r) {
+        return Ascii.MatrixAscii.getString(this, this.label == null ? "Matrix" : this.label, r);
+    }
+
+    public String toString(String header) {
+        return Ascii.MatrixAscii.getString(this, header);
+    }
+
+    public void print(String header, int r) {
+        System.out.println(toString(header, r));
+    }
+
     public void print(String header) {
-        System.out.println(toString());
+        System.out.println(toString(header));
+    }
+
+    public void print(int r) {
+        print(this.label == null ? "Matrix" : this.label, r);
     }
 
     public void print() {
         print(this.label == null ? "Matrix" : this.label);
     }
+
+
     
     public static final void main(String[] args) {
 
@@ -494,6 +565,8 @@ public final class Matrix {
         }
         replace(e, 0, randomIndices).print("replace(E, 0, randomIndices)");
         replace(e, 42, 4).print("replace(E, 42, 4)");
+
+        diag(1, 5).print("I(5)", 0);
 
     }
 

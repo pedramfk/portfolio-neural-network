@@ -102,15 +102,13 @@ public class TestNetwork {
 
         final Network network = new Network() {{
             addLayer(new DenseLayer(8, 4, new SigmoidActivation()));
-            //addLayer(new DenseLayer(16, 8, new TanhActivation()));
-            //addLayer(new DropoutLayer(.01));
-            //addLayer(new DenseLayer(12, 4, new TanhActivation()));
+            //addLayer(new DenseLayer(6, 4, new SigmoidActivation()));
             addLayer(new DenseLayer(4, 2, new SigmoidActivation()));
             addLayer(new DenseLayer(2, 1, new SigmoidActivation()));
         }};
 
-        network.fit(xTrain, yTrain, 4000, 1e-3);
-        //network.fit(xTrain, yTrain, 15000, 4, true, 1e-2);
+        network.fit(xTrain, yTrain, xTest, yTest, 2800, 1e-3);
+        //network.fit(xTrain, yTrain, 10000, 8, false, 1e-4);
 
         Matrix yPred = network.predict(xTest);
 
