@@ -6,6 +6,14 @@ public interface Layer {
     
     Matrix forwardPropagate(Matrix input);
 
-    Matrix backwardPropagate(Matrix error, double learningRate);
+    Matrix backwardPropagate(Matrix delta, double learningRate);
+    
+    Matrix getWeight();
+
+    Matrix getBias();
+
+    int getInputDim();
+
+    int getOutputDim();
 
 }

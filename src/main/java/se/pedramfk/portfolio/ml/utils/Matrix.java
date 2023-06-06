@@ -220,6 +220,10 @@ public final class Matrix {
         return res;
     }
 
+    public static final Matrix multiply(Matrix matrix, double v) {
+        return new Matrix(matrix).iterator(multiplyValues, v);
+    }
+
     public static final Matrix dot(Matrix a, Matrix b) {
         Matrix res = new Matrix(a.rows, a.cols);
         for (int i = 0; i < res.rows; i++) {

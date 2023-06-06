@@ -5,10 +5,10 @@ import static se.pedramfk.portfolio.ml.utils.Matrix.*;
 
 import se.pedramfk.portfolio.ml.ann.activations.Activation;
 import se.pedramfk.portfolio.ml.ann.activations.SigmoidActivation;
-import se.pedramfk.portfolio.ml.ann.losses.CrossEntropyLoss;
+import se.pedramfk.portfolio.ml.ann.losses.BinaryCrossEntropyLoss;
 
 
-public final class DenseLayer implements HiddenLayer {
+public final class DenseLayer implements Layer {
 
     private final int n, m;
 
@@ -16,17 +16,17 @@ public final class DenseLayer implements HiddenLayer {
 
     private Matrix x, z;
 
-    private final Activation activationLayer;
+    private final Activation activation;
 
-    public DenseLayer(int n, int m, Activation activationLayer) {
+    public DenseLayer(int n, int m, Activation activation) {
         
         this.n = n;
         this.m = m;
 
-        this.w = new Matrix(m, n).initializeWithRandomValue(.01);
-        this.b = new Matrix(m, 1).initializeWithRandomValue(.001);
+        this.w = new Matrix(m, n).initializeWithRandomValue(.1);
+        this.b = new Matrix(m, 1).initializeWithRandomValue(.01);
 
-        this.activationLayer = activationLayer;
+        this.activation = activation;
 
     }
 
@@ -35,109 +35,115 @@ public final class DenseLayer implements HiddenLayer {
     public Matrix forwardPropagate(Matrix input) {
 
         this.x = input.copy();
-        this.z = add(multiply(this.w, this.x), repeat(this.b, 1, input.cols));
-        return activationLayer.getActivation(this.z);
+
+        this.z = transpose(add(multiply(this.w, transpose(input.copy())), repeat(this.b, 1, input.rows)));
+        
+        return activation.getActivation(this.z);
 
     }
 
     @Override
     public Matrix backwardPropagate(Matrix delta, double learningRate) {
 
-        Matrix aGrad = activationLayer.getActivationGradient(this.z);
-        
-        Matrix forwardDelta = multiply(transpose(this.w), delta);
-        Matrix currentDelta = dot(delta, aGrad);
+        double lambda = .0001;
 
-        Matrix wGrad = multiply(this.x, transpose(currentDelta)).multiply(learningRate);
-        Matrix bGrad = currentDelta.multiply(learningRate);
+        Matrix activationGradient = dot(delta, activation.getActivationGradient(this.z));
 
-        this.w = Matrix.subtract(this.w, transpose(wGrad));
-        this.b = Matrix.subtract(this.b, bGrad);
-        
-        return forwardDelta;
+        Matrix propagatedGradient = multiply(activationGradient, this.w);
+
+        //Matrix weightGradient = multiply(transpose(activationGradient), this.x);
+        Matrix weightGradient = add(multiply(transpose(activationGradient), this.x).multiply(1.0 / this.x.rows), multiply(this.w, 2 * lambda));
+
+        this.w = subtract(this.w, weightGradient.multiply(learningRate));
+        this.b = subtract(this.b, transpose(activationGradient).multiply(learningRate));
+
+        return propagatedGradient;
 
     }
 
-    @Override
-    public Matrix getWeight() {
-        return this.w;
-    }
+    @Override public Matrix getWeight() { return this.w; }
 
-    @Override
-    public Matrix getBias() {
-        return this.b;
-    }
+    @Override public Matrix getBias() { return this.b; }
 
-    @Override
-    public int getInputDim() {
-        return this.n;
-    }
+    @Override public int getInputDim() { return this.n; }
 
-    @Override
-    public int getOutputDim() {
-        return this.m;
-    }
+    @Override public int getOutputDim() { return this.m; }
 
     public static final void main(String[] args) {
 
-        double[][] xArray = new double[][] {
-            {3, 2, -1}, 
-            {3, 2, -1}, 
-            {3, 2, -1}, 
-            {1, 0, 3}
-        };
+        final BinaryCrossEntropyLoss crossEntropyLoss = new BinaryCrossEntropyLoss();
 
-        double[][] yArray = new double[][] {
-            {1}, 
-            {1}, 
-            {1}, 
-            {0}
-        };
+        final double lr = 1e-3;
 
-        Matrix x = transpose(fromArray(xArray));
-        Matrix y = transpose(fromArray(yArray));
+        Matrix x = fromArray(new double[][] {
+            {.3, .2, .9, .2, .7}, 
+            {.3, .4, .1, .0, .1}, 
+            {.3, .2, .0, .1, .4}, 
+            //{1, 0, 3}
+        });
 
-        DenseLayer layer1 = new DenseLayer(3, 2, new SigmoidActivation());
-        DenseLayer layer2 = new DenseLayer(2, 1, new SigmoidActivation());
+        Matrix y = fromArray(new double[][] {
+            {1.0}, 
+            {1.0}, 
+            {0.0}, 
+            //{0}
+        });
 
-        layer1.getWeight().print("Layer 1 - W - Iteration 0", 3);
-        layer2.getWeight().print("Layer 2 - W - Iteration 0", 3);
+        DenseLayer layer1 = new DenseLayer(5, 4, new SigmoidActivation());
+        DenseLayer layer2 = new DenseLayer(4, 2, new SigmoidActivation());
+        DenseLayer layer3 = new DenseLayer(2, 1, new SigmoidActivation());
 
-        layer1.getBias().print("Layer 1 - b - Iteration 0", 3);
-        layer2.getBias().print("Layer 2 - b - Iteration 0", 3);
+        final Matrix layer1W0 = layer1.getWeight().copy();
+        final Matrix layer2W0 = layer2.getWeight().copy();
+        final Matrix layer3W0 = layer3.getWeight().copy();
 
-        Matrix a1 = layer1.forwardPropagate(x);
-        Matrix a2 = layer2.forwardPropagate(a1);
+        final Matrix yHat0 = layer3.forwardPropagate(layer2.forwardPropagate(layer1.forwardPropagate(x)));
         
-        a1.print("a1", 3);
-        a2.print("a2", 3);
+        double loss0 = crossEntropyLoss.getLoss(y, yHat0);
+        Matrix lossGrad0 = crossEntropyLoss.getLossGradient(y, yHat0);
 
-        final CrossEntropyLoss crossEntropyLoss = new CrossEntropyLoss();
+        layer1.backwardPropagate(layer2.backwardPropagate(layer3.backwardPropagate(lossGrad0, lr), lr), lr);
 
-        Matrix loss = crossEntropyLoss.getLoss(a2, y);
-        Matrix lossGrad = crossEntropyLoss.getLossGradient(a2, y);
+        final Matrix layer1W1 = layer1.getWeight().copy();
+        final Matrix layer2W1 = layer2.getWeight().copy();
+        final Matrix layer3W1 = layer3.getWeight().copy();
 
-        loss.print("Cross-Entropy Loss - Iteration 0", 3);
-        lossGrad.print("Cross-Entropy Loss Gradient - Iteration 0", 3);
+        final Matrix yHat1 = layer3.forwardPropagate(layer2.forwardPropagate(layer1.forwardPropagate(x)));
 
-        Matrix delta2 = layer2.backwardPropagate(lossGrad, 0.01);
-        Matrix delta1 = layer1.backwardPropagate(delta2, 0.01);
+        double loss1 = crossEntropyLoss.getLoss(y, yHat1);
+        Matrix lossGrad1 = crossEntropyLoss.getLossGradient(y, yHat1);
 
-        delta2.print("layer 2 - delta", 3);
-        delta1.print("layer 1 - delta", 3);
+        layer1.backwardPropagate(layer2.backwardPropagate(layer3.backwardPropagate(lossGrad1, lr), lr), lr);
 
-        layer1.getWeight().print("Layer 1 - W - Iteration 1", 3);
-        layer2.getWeight().print("Layer 2 - W - Iteration 1", 3);
+        final Matrix layer1W2 = layer1.getWeight().copy();
+        final Matrix layer2W2 = layer2.getWeight().copy();
+        final Matrix layer3W2 = layer3.getWeight().copy();
 
-        layer1.getBias().print("Layer 1 - b - Iteration 1", 3);
-        layer2.getBias().print("Layer 2 - b - Iteration 1", 3);
+        final Matrix yHat2 = layer3.forwardPropagate(layer2.forwardPropagate(layer1.forwardPropagate(x)));
 
-        Matrix a2New = layer2.forwardPropagate(layer1.forwardPropagate(x));
-        Matrix updatedLoss = crossEntropyLoss.getLoss(a2New, y);
-        Matrix updatedLossGrad = crossEntropyLoss.getLossGradient(a2New, y);
+        double loss2 = crossEntropyLoss.getLoss(y, yHat2);
+        Matrix lossGrad2 = crossEntropyLoss.getLossGradient(y, yHat2);
 
-        updatedLoss.print("Cross-Entropy Loss - Iteration 1", 3);
-        updatedLossGrad.print("Cross-Entropy Loss Gradient - Iteration 1", 3);
+        layer1W0.print("W1(0)", 5);
+        layer1W1.print("W1(1)", 5);
+        layer1W2.print("W1(2)", 5);
+
+        layer2W0.print("W2(0)", 5);
+        layer2W1.print("W2(1)", 5);
+        layer2W2.print("W2(2)", 5);
+
+        layer3W0.print("W3(0)", 5);
+        layer3W1.print("W3(1)", 5);
+        layer3W2.print("W3(2)", 5);
+
+        System.out.println("L(0): " + loss0);
+        System.out.println("L(1): " + loss1);
+        System.out.println("L(2): " + loss2);
+
+        lossGrad0.print("L'(0)", 4);
+        lossGrad1.print("L'(1)", 4);
+        lossGrad2.print("L'(2)", 4);
+
 
     }
     

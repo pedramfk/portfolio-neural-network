@@ -7,61 +7,11 @@ import se.pedramfk.portfolio.ml.utils.MatrixData.TrainAndTestData;
 import se.pedramfk.portfolio.ml.ann.activations.*;
 import se.pedramfk.portfolio.ml.ann.models.Network;
 import se.pedramfk.portfolio.ml.ann.layers.DenseLayer;
+import se.pedramfk.portfolio.ml.ann.losses.BinaryCrossEntropyLoss;
 import se.pedramfk.portfolio.ml.metrics.BinaryClassificationResults;
 
 
 public class TestNetwork {
-
-    public static final double getAccuracy(Matrix yTrue, Matrix yPred) {
-
-        int n = yTrue.rows;
-        double correct = 0;
-
-        for (int i = 0; i < n; i++) {
-            double pred = yPred.get(i, 0) > .5 ? 1.0 : 0.0;
-            double actual = yTrue.get(i, 0) > .5 ? 1.0 : 0.0;
-            if (pred == actual) correct++;
-        }
-
-        return correct / n;
-
-    }
-
-    public static final double getTPr(Matrix yTrue, Matrix yPred) {
-
-        int n = yTrue.rows;
-
-        double nTp = 0.0;
-        double nFn = 0.0;
-
-        for (int i = 0; i < n; i++) {
-            double pred = yPred.get(i, 0) > .5 ? 1.0 : 0.0;
-            double actual = yTrue.get(i, 0) > .5 ? 1.0 : 0.0;
-            if ((pred == 1.) && (actual == 1.)) nTp++;
-            else if ((pred == 0.) && (actual == 1.)) nFn++;
-        }
-
-        return nTp / (nTp + nFn);
-
-    }
-
-    public static final double getFNr(Matrix yTrue, Matrix yPred) {
-
-        int n = yTrue.rows;
-
-        double nTp = 0.0;
-        double nFn = 0.0;
-
-        for (int i = 0; i < n; i++) {
-            double pred = yPred.get(i, 0) > .5 ? 1.0 : 0.0;
-            double actual = yTrue.get(i, 0) > .5 ? 1.0 : 0.0;
-            if ((pred == 1.) && (actual == 1.)) nTp++;
-            else if ((pred == 0.) && (actual == 1.)) nFn++;
-        }
-
-        return nTp / (nTp + nFn);
-
-    }
 
     public static final InputAndOutputData loadData(String path) throws Exception {
         return MatrixData.loadInputAndOutputData(path, ",");
@@ -100,15 +50,14 @@ public class TestNetwork {
         final Matrix xTest = new Matrix(trainAndTestData.getTestData().getNormalizedX());
         final Matrix yTest = new Matrix(trainAndTestData.getTestData().getY());
 
-        final Network network = new Network() {{
-            addLayer(new DenseLayer(8, 4, new SigmoidActivation()));
-            //addLayer(new DenseLayer(6, 4, new SigmoidActivation()));
-            addLayer(new DenseLayer(4, 2, new SigmoidActivation()));
-            addLayer(new DenseLayer(2, 1, new SigmoidActivation()));
+        final Network network = new Network(new BinaryCrossEntropyLoss()) {{
+            addLayer(new DenseLayer(8, 7, new SigmoidActivation()));
+            addLayer(new DenseLayer(7, 3, new SigmoidActivation()));
+            addLayer(new DenseLayer(3, 1, new SigmoidActivation()));
         }};
-
-        network.fit(xTrain, yTrain, xTest, yTest, 2800, 1e-3);
-        //network.fit(xTrain, yTrain, 10000, 8, false, 1e-4);
+        
+        network.fit(xTrain, yTrain, xTest, yTest, 3000, 4e-2);
+        //network.fit(xTrain, yTrain, xTest, yTest, 10000, 8, false, 1e-4);
 
         Matrix yPred = network.predict(xTest);
 

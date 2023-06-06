@@ -72,7 +72,7 @@ public class NeuralNetwork {
                 
                 Matrix gradient = loss.getLossGradient(yiBatchPred, yiBatch);
                 for (int l = layers.size() - 1; l >= 0 ; l--) {
-                    gradient = this.optimizer.step(i, this.layers.get(l), gradient);
+                    //gradient = this.optimizer.step(i, this.layers.get(l), gradient);
                 }
                 
             }

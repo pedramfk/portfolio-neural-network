@@ -49,17 +49,17 @@ res.getConfusionMatrix().print();
            Predicted     Predicted
            True          False
         ┌─────────────┬─────────────┐
-Actual  │    60.0 %   │    40.0 %   │
-True    │     (33)    │     (22)    │
+Actual  │    61.8 %   │    38.2 %   │
+True    │     (34)    │     (21)    │
         ├─────────────┼─────────────┤
-Actual  │    21.4 %   │    91.0 %   │
+Actual  │    20.9 %   │    91.0 %   │
 False   │      (9)    │     (91)    │
         └─────────────┴─────────────┘
 
-· Accuracy: 80.0 %
-· Precision: 78.6 %
-· Recall: 60.0 %
-· F1: 68.0 %
+· Accuracy: 80.6 %
+· Precision: 79.1 %
+· Recall: 61.8 %
+· F1: 69.4 %
 
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
@@ -70,22 +70,35 @@ False   │      (9)    │     (91)    │
 
 ### Dimensions
 
-- **Input data:** $x \in \mathbb{R}^{[ d_0 \times n_b ]}$
-- **Target data:** $y \in \mathbb{R}^{[ d_K \times n_b ]}$
-- **Layer weight:** $W_k \in \mathbb{R}^{[ d_{k} \times d_{k-1} ]}$
-- **Layer bias:** $b_k \in \mathbb{R}^{[ d_k \times n_b ]}$
+- **Number of layer:** $K$
+- **Batch sample size:** $N$
+- **Input dimension:** $[M \times N]$
+- **Output dimension:** $[D \times N]$
+- **Layer weight dimension:** $[d_{k} \times d_{k - 1}]$
+- **Layer bias dimension:** $[d_{k} \times N]$
+- **Input data:** $x$
+- **Output data:** $y$
+- **Layer weight:** $W_k$
+- **Layer bias:** $b_k$
+- **Layer activation function:** $f_k(\cdot)$
+- **Layer input:** $a_{k-1}$
+- **Layer output:** $a_K$
 
-### Forward Propagation
+### Layers - Forward Propagation
 
-- **Layer indices:** $k = 1, 2, \dots, K$
-- **Layer input:** $x_k = a_{k-1}$
-- **Linear layer output:** $z_k = W_k x_k + b_k$
-- **Non-linear layer output:** $a_k = f\left(z_k\right)$
+- **Linear output:** $z_k = W_k a_{k-1} + b_k$
+- **Non-linear output:** $a_k = f\left(z_k\right)$
   - *E.g. sigmoid activation:* $f(z) = \frac{1}{1 + e^{-z}}$
-- **Predictions:** $\hat{y} = a_K$.
+- **Predictions:** $\hat{y} = a_K = f_K(f_{K-1}(\dots f_1(W_1x + b_1)))$
+- **Regularization:** $R(\cdot)$
+  - *E.g. quadratic weight cost function:* $R_k(\cdot) = \lambda \sum_{(i, j)} \vert\vert W_k^{(i, j)} \vert\vert^2$
+- **Loss:** $L(\cdot)$
+  - *E.g. cross-entropy loss:* $L_C(\cdot) = - \sum_{i = 1}^{N-1}y \cdot \ln a_K$
+- **Cost Function:** $C(\cdot) = L(\cdot) + R(\cdot)$
+  - *E.g.:* $C(\cdot) = - \sum_{i = 1}^{N-1}y \cdot \ln a_K + \lambda \sum_{k=1}^{K} \sum_{(i, j)} \vert\vert W_k^{(i, j)} \vert\vert^2$
 
 $$
-a_k = f \left (
+a_k = f \left(
 \underbrace{
 \begin{bmatrix}
         W_k^{(0, 0)} & \dots & W_k^{(0, d_{k-1})}\\
@@ -111,18 +124,7 @@ a_k = f \left (
         a_k^{(d_{k}, 0)} & \dots & a_k^{(d_{k}, n_b)}
 \end{bmatrix}
 $$
-
-### Cross-Entropy Loss
-
-- $n_b = 1 \rightarrow L_{\mathcal{c}} \left(y, \hat{y} \right) = - y \cdot \ln \hat{y}$
-- $n_b > 1 \rightarrow L_{\mathcal{c}} \left(y, \hat{y} \right) = - \frac{1}{n_b} \sum_i y^T \ln \hat{y}$
-
-### Quadratic Loss
-
-- $n_b = 1 \rightarrow L_{\mathcal{q}} \left(y, \hat{y} \right) = \frac{1}{2} (y - \hat{y})(y - \hat{y})^T$
-- $n_b > 1 \rightarrow L_{\mathcal{q}} \left(y, \hat{y} \right) = \frac{1}{2n_b} (y - \hat{y})(y - \hat{y})^T$
-
-### Backward Propagation
+### Layers - Backward Propagation
 
 - **Output loss gradient:** $\delta_K = \nabla_a L_q (y, a_K)$
 - **Layer loss gradient:** $\delta_k = W_{k+1}^T \delta_{k+1} \cdot \nabla_z f (z_k) \vert_{\forall k < K}$
@@ -131,24 +133,48 @@ $$
   - $\rightarrow W_k^{(i+1)} = W_k^{(i)} - \eta \times x_k\delta_k$
   - $\rightarrow b_k^{(i+1)} = b_k^{(i)} - \eta \times x_k\delta_k$
 
+$C = L(y, f(z_k)) + R(W_k)$
+
+$C = L(y, \hat{y}) + \lambda \sum_{i=1}^{K} \sum_{(i, j) \in W_k} \vert\vert W_k^{(i, j)} \vert\vert^2$
+
+$\frac{\partial C}{\partial W_k} 
+        = \frac{\partial C}{\partial a_K} \times 
+          \frac{\partial a_K}{\partial z_K} \times 
+          \frac{\partial z_K}{\partial W_K} \times 
+          \frac{\partial z_{K-1}}{\partial W_{K-1}} \times \dots \times 
+          \frac{\partial z_k}{\partial W_k}$
+
+$L(y, \hat{y}) = - \frac{1}{n_b} \sum_{j=0}^{n_b - 1} y_{i, j=j} \ln \hat{y}_{i, j=j}$
+
+$a_K = f(z_K) = 1 / (1 + e^{-z_K})$
+
+$\nabla_{a_K} C = - \frac{1}{n_b} y / a_K$
+
+$\nabla_{z_K} a_K = f(z_K) \times \left( 1 - f(z_K) \right) = a_K \left( 1 - a_K \right)$
+
+$\nabla_{W_K} z_K = a_{K-1}$
+
+$\nabla_{W_K} C = - y(1 - a_K)x_K + 2 \lambda \sum \vert\vert W_k \vert\vert$
+
 ---
 
 ## TODO
 
-[x] Cross-Entropy loss
+[X] Cross-Entropy loss
+ - [X] Binary Cross-Entropy
 
-[ ] Regularization
-
-[ ] Batch Normalization
+[X] Regularization
+ - [X] Weight Matrices Cost
+ - [ ] Dropout Layer
+ - [ ] Batch Normalization
 
 [ ] Weight & Bias Initialization methods
 
-[ ] Dropout Layer
-
 [ ] Adaptive Learning Rate
-
-[ ] Wrapper for Train Results
+ - [X] Exponential Decay
 
 [ ] Unit Tests
 
-[ ] Plots
+[ ] Nice to have
+ - [ ] Wrapper for Train Results
+ - [ ] Plots
